@@ -33,7 +33,29 @@ HELM_OUTPUT=$(helm template cfb "$HELM_CHART" \
 
 # Step 2: Pipe through Kustomize
 echo -e "\033[33mStep 2: Applying Kustomize overlays...\033[0m"
-FINAL_MANIFEST=$(echo "$HELM_OUTPUT" | kustomize build "$OVERLAY_PATH" - 2>&1) || {
+
+# Create temporary directory
+TEMP_KUST_DIR=$(mktemp -d)
+trap "rm -rf $TEMP_KUST_DIR" EXIT
+
+# Save helm output to temp file
+echo "$HELM_OUTPUT" > "$TEMP_KUST_DIR/helm-manifest.yaml"
+
+# Copy overlay kustomization
+cp "$OVERLAY_PATH/kustomization.yaml" "$TEMP_KUST_DIR/kustomization.yaml"
+
+# Add helm-manifest.yaml as resource if not already present
+if ! grep -q "resources:" "$TEMP_KUST_DIR/kustomization.yaml"; then
+    {
+        echo "resources:"
+        echo "- helm-manifest.yaml"
+        echo ""
+        cat "$TEMP_KUST_DIR/kustomization.yaml"
+    } > "$TEMP_KUST_DIR/kustomization.yaml.tmp"
+    mv "$TEMP_KUST_DIR/kustomization.yaml.tmp" "$TEMP_KUST_DIR/kustomization.yaml"
+fi
+
+FINAL_MANIFEST=$(kustomize build "$TEMP_KUST_DIR" 2>&1) || {
     echo -e "\033[31mError applying Kustomize overlays:\033[0m"
     echo "$FINAL_MANIFEST"
     exit 1
@@ -49,3 +71,4 @@ else
     echo -e "\033[36m---\033[0m"
     echo "$FINAL_MANIFEST"
 fi
+

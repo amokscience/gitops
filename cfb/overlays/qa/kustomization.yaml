@@ -8,8 +8,8 @@ secretGenerator:
   literals:
   - CFBD_API_KEY=your_qa_api_key_here
 
-# Patch resources for QA environment
-patches:
+# Patch Deployment with QA-specific values
+patchesJson6902:
 - target:
     kind: Deployment
     name: cfb
@@ -17,3 +17,6 @@ patches:
     - op: replace
       path: /spec/replicas
       value: 2
+    - op: replace
+      path: /spec/template/spec/containers/0/env/3/value
+      value: "redis-qa:6379"

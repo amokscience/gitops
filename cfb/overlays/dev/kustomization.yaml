@@ -8,8 +8,8 @@ secretGenerator:
   literals:
   - CFBD_API_KEY=your_dev_api_key_here
 
-# Patch resources for dev environment
-patches:
+# Patch Deployment with dev-specific values
+patchesJson6902:
 - target:
     kind: Deployment
     name: cfb
@@ -17,3 +17,6 @@ patches:
     - op: replace
       path: /spec/replicas
       value: 1
+    - op: replace
+      path: /spec/template/spec/containers/0/env/3/value
+      value: "192.168.1.216:6379"

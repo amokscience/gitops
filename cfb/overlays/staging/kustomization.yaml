@@ -8,8 +8,8 @@ secretGenerator:
   literals:
   - CFBD_API_KEY=your_staging_api_key_here
 
-# Patch resources for staging environment
-patches:
+# Patch Deployment with staging-specific values
+patchesJson6902:
 - target:
     kind: Deployment
     name: cfb
@@ -17,3 +17,6 @@ patches:
     - op: replace
       path: /spec/replicas
       value: 2
+    - op: replace
+      path: /spec/template/spec/containers/0/env/3/value
+      value: "redis-staging:6379"

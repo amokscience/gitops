@@ -27,7 +27,7 @@ param(
     [switch]$Apply
 )
 
-$repoRoot = Split-Path -Parent $PSScriptRoot
+$repoRoot = $PSScriptRoot
 $helmChart = Join-Path $repoRoot "cfb\helm"
 $defaultsFile = Join-Path $repoRoot "helm-defaults\defaults.yaml"
 $valuesFile = Join-Path $repoRoot "cfb\helm\values.yaml"
@@ -49,7 +49,33 @@ if ($LASTEXITCODE -ne 0) {
 
 # Step 2: Pipe Helm output through Kustomize overlay
 Write-Host "Step 2: Applying Kustomize overlays..." -ForegroundColor Yellow
-$finalManifest = $helmOutput | kustomize build $overlayPath --load-restrictor LoadRestrictionsNone -f - 2>&1
+$tempFile = [System.IO.Path]::GetTempFileName()
+try {
+    # Save helm output to temp file
+    $helmOutput | Out-File -FilePath $tempFile -Encoding UTF8
+    
+    # Create temporary kustomization that includes the helm output
+    $tempKustDir = Join-Path ([System.IO.Path]::GetTempPath()) "kustomize-$(Get-Random)"
+    New-Item -ItemType Directory -Path $tempKustDir -Force | Out-Null
+    
+    # Copy overlay kustomization
+    Copy-Item (Join-Path $overlayPath "kustomization.yaml") (Join-Path $tempKustDir "kustomization.yaml")
+    
+    # Add helm output as resource
+    Copy-Item $tempFile (Join-Path $tempKustDir "helm-manifest.yaml")
+    
+    # Update kustomization to include helm manifest
+    $kustContent = Get-Content (Join-Path $tempKustDir "kustomization.yaml") -Raw
+    if ($kustContent -notmatch '^\s*resources:') {
+        $kustContent = "resources:`n- helm-manifest.yaml`n`n" + $kustContent
+        $kustContent | Out-File (Join-Path $tempKustDir "kustomization.yaml") -Encoding UTF8 -NoNewline
+    }
+    
+    $finalManifest = kustomize build $tempKustDir 2>&1
+} finally {
+    Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+    Remove-Item $tempKustDir -Recurse -Force -ErrorAction SilentlyContinue
+}
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Error applying Kustomize overlays:" -ForegroundColor Red

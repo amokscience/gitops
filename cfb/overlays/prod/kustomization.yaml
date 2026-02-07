@@ -8,8 +8,8 @@ secretGenerator:
   literals:
   - CFBD_API_KEY=your_prod_api_key_here
 
-# Patch resources for prod environment
-patches:
+# Patch Deployment with prod-specific values
+patchesJson6902:
 - target:
     kind: Deployment
     name: cfb
@@ -17,3 +17,6 @@ patches:
     - op: replace
       path: /spec/replicas
       value: 3
+    - op: replace
+      path: /spec/template/spec/containers/0/env/3/value
+      value: "redis-prod:6379"
