@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cfb.fullname" . }}
+  labels:
+    {{- include "cfb.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "cfb.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cfb.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "cfb.serviceAccountName" . }}
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.env.HTTP_PORT }}
+          protocol: TCP
+        env:
+        - name: HTTP_PORT
+          value: "{{ .Values.env.HTTP_PORT }}"
+        - name: CFBD_API_BASE
+          value: "{{ .Values.env.CFBD_API_BASE }}"
+        - name: CFBD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "cfb.fullname" . }}-secrets
+              key: cfbd-api-key
+        - name: REDIS_ADDR
+          value: "{{ .Values.env.REDIS_ADDR }}"
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

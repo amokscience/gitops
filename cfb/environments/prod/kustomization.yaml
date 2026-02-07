@@ -1,0 +1,44 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: cfb-prod
+
+bases:
+- ../../
+
+# Production-specific values overrides
+helmCharts:
+- name: cfb
+  repo: ""
+  releaseName: cfb
+  namespace: cfb-prod
+  valuesInline:
+    replicaCount: 3
+    image:
+      tag: v1.0.0
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 70
+    env:
+      HTTP_PORT: 8080
+      CFBD_API_BASE: https://api.collegefootballdata.com
+      REDIS_ADDR: redis-prod:6379
+
+# Patch resources for prod environment
+patchesStrategicMerge:
+- deployment-patch.yaml
+
+# Generate prod-specific secrets
+secretGenerator:
+- name: cfb-secrets
+  envs:
+  - .env.prod
