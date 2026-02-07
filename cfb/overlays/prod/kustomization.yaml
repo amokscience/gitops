@@ -11,4 +11,4 @@ secretGenerator:
 - name: cfb-secrets
   literals:
   - cfbd-api-key=your_prod_api_key_here
-  behavior: create
+  behavior: replace
