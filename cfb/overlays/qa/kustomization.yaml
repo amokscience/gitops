@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: qa
+
+# Generate QA-specific secrets
+secretGenerator:
+- name: cfb-secrets
+  literals:
+  - CFBD_API_KEY=your_qa_api_key_here
+
+# Patch resources for QA environment
+patches:
+- target:
+    kind: Deployment
+    name: cfb
+  patch: |-
+    - op: replace
+      path: /spec/replicas
+      value: 2
