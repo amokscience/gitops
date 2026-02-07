@@ -25,17 +25,15 @@ spec:
         - name: http
           containerPort: {{ .Values.env.HTTP_PORT }}
           protocol: TCP
-        envFrom:
-        - configMapRef:
-            name: {{ include "cfb.fullname" . }}-config
-        - secretRef:
-            name: {{ include "cfb.fullname" . }}-secrets
         env:
+        - name: HTTP_PORT
+          value: "{{ .Values.env.HTTP_PORT }}"
+        - name: CFBD_API_BASE
+          value: "{{ .Values.env.CFBD_API_BASE }}"
         - name: CFBD_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "cfb.fullname" . }}-secrets
-              key: cfbd-api-key
+          value: "{{ .Values.env.CFBD_API_KEY }}"
+        - name: REDIS_ADDR
+          value: "{{ .Values.env.REDIS_ADDR }}"
         resources:
           {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

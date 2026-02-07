@@ -1,0 +1,20 @@
+# QA environment values
+replicaCount: 1
+image:
+  repository: amokscience/cfb
+  pullPolicy: IfNotPresent
+  tag: "dev-latest"
+
+env:
+  HTTP_PORT: 8070
+  CFBD_API_BASE: https://api.collegefootballdata.com
+  CFBD_API_KEY: your_qa_api_key_here
+  REDIS_ADDR: redis-qa:6379
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 100Mi

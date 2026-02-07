@@ -1,0 +1,20 @@
+# Production environment values
+replicaCount: 2
+image:
+  repository: amokscience/cfb
+  pullPolicy: IfNotPresent
+  tag: "prod-latest"
+
+env:
+  HTTP_PORT: 8080
+  CFBD_API_BASE: https://api.collegefootballdata.com
+  CFBD_API_KEY: your_prod_api_key_here
+  REDIS_ADDR: redis-prod:6379
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
