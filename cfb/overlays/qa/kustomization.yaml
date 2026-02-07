@@ -2,6 +2,15 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: qa
 
+# Render Helm chart first
+helmCharts:
+- name: cfb
+  repo: file://../../../cfb/helm
+  releaseName: cfb
+  version: 0.1.0
+  valuesInline:
+    replicaCount: 1
+
 # Patch ConfigMap with QA-specific values
 patches:
 - path: configmap-patch.yaml
