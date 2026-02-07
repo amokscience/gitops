@@ -18,3 +18,7 @@ resources:
   limits:
     cpu: 100m
     memory: 100Mi
+
+ingress:
+  enabled: true
+  host: staging.cfb.local
