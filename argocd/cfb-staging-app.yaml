@@ -9,15 +9,6 @@ spec:
     repoURL: https://github.com/amokscience/gitops
     targetRevision: main
     path: cfb/overlays/staging
-    plugin:
-      name: helm-kustomize
-      env:
-      - name: HELM_CHART_PATH
-        value: cfb/helm
-      - name: HELM_DEFAULTS_FILE
-        value: helm-defaults/defaults.yaml
-      - name: HELM_VALUES_FILE
-        value: cfb/helm/values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: staging
