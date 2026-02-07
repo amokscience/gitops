@@ -42,3 +42,7 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+# Secrets (to be overridden by Kustomize)
+secrets:
+  cfbdApiKey: "placeholder-api-key"

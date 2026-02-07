@@ -2,21 +2,13 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: prod
 
-# Generate prod-specific secrets
+# Patch ConfigMap with prod-specific values
+patches:
+- path: configmap-patch.yaml
+
+# Patch Secret with prod-specific API key
 secretGenerator:
 - name: cfb-secrets
   literals:
-  - CFBD_API_KEY=your_prod_api_key_here
-
-# Patch Deployment with prod-specific values
-patchesJson6902:
-- target:
-    kind: Deployment
-    name: cfb
-  patch: |-
-    - op: replace
-      path: /spec/replicas
-      value: 3
-    - op: replace
-      path: /spec/template/spec/containers/0/env/3/value
-      value: "redis-prod:6379"
+  - cfbd-api-key=your_prod_api_key_here
+  behavior: merge

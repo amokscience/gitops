@@ -44,6 +44,9 @@ echo "$HELM_OUTPUT" > "$TEMP_KUST_DIR/helm-manifest.yaml"
 # Copy overlay kustomization
 cp "$OVERLAY_PATH/kustomization.yaml" "$TEMP_KUST_DIR/kustomization.yaml"
 
+# Copy any patch files
+cp "$OVERLAY_PATH"/*-patch.yaml "$TEMP_KUST_DIR/" 2>/dev/null || true
+
 # Add helm-manifest.yaml as resource if not already present
 if ! grep -q "resources:" "$TEMP_KUST_DIR/kustomization.yaml"; then
     {

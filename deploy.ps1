@@ -61,6 +61,11 @@ try {
     # Copy overlay kustomization
     Copy-Item (Join-Path $overlayPath "kustomization.yaml") (Join-Path $tempKustDir "kustomization.yaml")
     
+    # Copy any patch files
+    Get-Item (Join-Path $overlayPath "*-patch.yaml") -ErrorAction SilentlyContinue | ForEach-Object {
+        Copy-Item $_.FullName (Join-Path $tempKustDir $_.Name)
+    }
+    
     # Add helm output as resource
     Copy-Item $tempFile (Join-Path $tempKustDir "helm-manifest.yaml")
     

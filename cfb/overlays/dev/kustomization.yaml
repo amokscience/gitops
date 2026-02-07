@@ -2,21 +2,13 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: dev
 
-# Generate dev-specific secrets
+# Patch ConfigMap with dev-specific values
+patches:
+- path: configmap-patch.yaml
+
+# Patch Secret with dev-specific API key
 secretGenerator:
 - name: cfb-secrets
   literals:
-  - CFBD_API_KEY=your_dev_api_key_here
-
-# Patch Deployment with dev-specific values
-patchesJson6902:
-- target:
-    kind: Deployment
-    name: cfb
-  patch: |-
-    - op: replace
-      path: /spec/replicas
-      value: 1
-    - op: replace
-      path: /spec/template/spec/containers/0/env/3/value
-      value: "192.168.1.216:6379"
+  - cfbd-api-key=your_dev_api_key_here
+  behavior: merge
