@@ -1,0 +1,9 @@
+namespace: staging
+
+externalSecrets:
+  enabled: true
+  awsRegion: us-west-2
+  secretName: cfb-staging-secrets
+  awsSecrets:
+    cfbdApiKey: cfb
+    redisAddr: redis-addr

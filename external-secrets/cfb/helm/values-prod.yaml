@@ -1,0 +1,9 @@
+namespace: prod
+
+externalSecrets:
+  enabled: true
+  awsRegion: us-west-2
+  secretName: cfb-prod-secrets
+  awsSecrets:
+    cfbdApiKey: cfb
+    redisAddr: redis-addr
