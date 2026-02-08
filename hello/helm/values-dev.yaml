@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repository: amokscience/hello
   pullPolicy: Always
-  tag: "dev-3b5f8c5"
+  tag: "dev-8363918"
 
 env:
   HTTP_PORT: 8050
