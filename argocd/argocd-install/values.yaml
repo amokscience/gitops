@@ -15,6 +15,48 @@ controller:
 
 repoServer:
   replicas: 1
+  
+  # ============================================================================
+  # Custom Helm Version Override
+  # ============================================================================
+  # Replace bundled Helm with a different version using init container
+  # Update HELM_VERSION to desired version (e.g., 3.14.0, 3.15.0)
+  # ============================================================================
+  initContainers:
+  - name: helm-override
+    image: alpine:latest
+    command:
+      - sh
+      - -c
+      - |
+        #!/bin/sh
+        set -e
+        
+        # Download custom Helm version
+        HELM_VERSION="3.14.0"  # ⚠️ UPDATE THIS to your desired Helm version
+        HELM_URL="https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz"
+        
+        echo "Downloading Helm ${HELM_VERSION}..."
+        cd /tmp
+        wget -q $HELM_URL
+        tar xzf helm-v${HELM_VERSION}-linux-amd64.tar.gz
+        
+        # Replace bundled Helm
+        echo "Installing Helm ${HELM_VERSION} to /usr/local/bin/helm"
+        cp linux-amd64/helm /usr/local/bin/helm
+        chmod +x /usr/local/bin/helm
+        
+        # Verify
+        /usr/local/bin/helm version
+        
+        echo "✓ Helm replaced successfully"
+    volumeMounts:
+    - name: helm-volume
+      mountPath: /usr/local/bin
+  
+  volumes:
+  - name: helm-volume
+    emptyDir: {}
 
 applicationSet:
   enabled: true
