@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repository: amokscience/cfb
   pullPolicy: IfNotPresent
-  tag: "dev-9c9ed10"
+  tag: "dev-d616938"
 
 env:
   HTTP_PORT: 8070
