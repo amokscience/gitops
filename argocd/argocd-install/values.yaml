@@ -1,0 +1,23 @@
+# ArgoCD Helm chart values
+# Chart: https://github.com/argoproj/argo-helm
+
+server:
+  extraArgs:
+    - --insecure  # For local development without TLS
+  
+configs:
+  params:
+    server.insecure: true
+
+# Enable high availability (optional for local)
+controller:
+  replicas: 1
+
+repoServer:
+  replicas: 1
+
+applicationSet:
+  enabled: true
+
+notifications:
+  enabled: true
