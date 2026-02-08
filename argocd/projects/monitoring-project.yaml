@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: monitoring
+  namespace: argocd
+spec:
+  description: Monitoring and observability stack
+  
+  # Allow deploying to monitoring namespace
+  destinations:
+  - namespace: monitoring
+    server: https://kubernetes.default.svc
+  
+  # Allow Helm charts from prometheus-community and git repos
+  sourceRepos:
+  - 'https://prometheus-community.github.io/helm-charts'
+  - 'https://github.com/amokscience/gitops'
+  
+  # Allow all resource types
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  
+  # Orphaned resources handling
+  orphanedResources:
+    warn: true

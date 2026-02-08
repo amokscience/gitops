@@ -1,0 +1,103 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+spec:
+  project: monitoring  # Using custom project
+  source:
+    chart: kube-prometheus-stack
+    repoURL: https://prometheus-community.github.io/helm-charts
+    targetRevision: 65.1.1
+    helm:
+      values: |
+        # Prometheus configuration
+        prometheus:
+          prometheusSpec:
+            # Scrape ArgoCD metrics
+            additionalScrapeConfigs:
+            - job_name: 'argocd-metrics'
+              scrape_interval: 30s
+              static_configs:
+              - targets:
+                - argocd-metrics.argocd.svc.cluster.local:8082
+            - job_name: 'argocd-server-metrics'
+              scrape_interval: 30s
+              static_configs:
+              - targets:
+                - argocd-server-metrics.argocd.svc.cluster.local:8083
+            - job_name: 'argocd-repo-server-metrics'
+              scrape_interval: 30s
+              static_configs:
+              - targets:
+                - argocd-repo-server.argocd.svc.cluster.local:8084
+            
+            # Retention
+            retention: 15d
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 10Gi
+        
+        # Grafana configuration
+        grafana:
+          adminPassword: admin  # Change in production!
+          ingress:
+            enabled: true
+            ingressClassName: nginx
+            hosts:
+            - grafana.local
+            annotations:
+              nginx.ingress.kubernetes.io/ssl-redirect: "false"
+          
+          # Pre-load ArgoCD dashboard
+          dashboardProviders:
+            dashboardproviders.yaml:
+              apiVersion: 1
+              providers:
+              - name: 'argocd'
+                orgId: 1
+                folder: 'ArgoCD'
+                type: file
+                disableDeletion: false
+                editable: true
+                options:
+                  path: /var/lib/grafana/dashboards/argocd
+          
+          dashboards:
+            argocd:
+              argocd-dashboard:
+                url: https://raw.githubusercontent.com/argoproj/argo-cd/master/examples/dashboard.json
+                datasource: Prometheus
+        
+        # Alertmanager configuration
+        alertmanager:
+          config:
+            global:
+              resolve_timeout: 5m
+            route:
+              group_by: ['alertname', 'job']
+              group_wait: 10s
+              group_interval: 10s
+              repeat_interval: 12h
+              receiver: 'null'
+              routes:
+              - match:
+                  severity: critical
+                receiver: 'null'  # Replace with your receiver (email, slack, etc)
+            receivers:
+            - name: 'null'
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
