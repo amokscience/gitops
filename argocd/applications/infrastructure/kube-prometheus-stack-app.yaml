@@ -10,7 +10,6 @@ spec:
     repoURL: https://prometheus-community.github.io/helm-charts
     targetRevision: 65.1.1
     helm:
-      skipCrds: true  # CRDs have annotation size issues - install separately
       values: |
         # Prometheus configuration
         prometheus:
