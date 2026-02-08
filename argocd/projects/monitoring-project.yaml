@@ -6,9 +6,11 @@ metadata:
 spec:
   description: Monitoring and observability stack
   
-  # Allow deploying to monitoring namespace
+  # Allow deploying to monitoring and kube-system namespaces
   destinations:
   - namespace: monitoring
+    server: https://kubernetes.default.svc
+  - namespace: kube-system
     server: https://kubernetes.default.svc
   
   # Allow Helm charts from prometheus-community and git repos
