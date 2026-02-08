@@ -18,7 +18,7 @@ resources:
 
 ingress:
   enabled: true
-  host: hello-staging.local
+  host: staging.hello.local
 
 serviceAccount:
   create: true

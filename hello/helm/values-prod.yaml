@@ -18,7 +18,7 @@ resources:
 
 ingress:
   enabled: true
-  host: hello-prod.local
+  host: prod.hello.local
 
 serviceAccount:
   create: true

@@ -18,7 +18,7 @@ resources:
 
 ingress:
   enabled: true
-  host: hello-qa.local
+  host: qa.hello.local
 
 serviceAccount:
   create: true
