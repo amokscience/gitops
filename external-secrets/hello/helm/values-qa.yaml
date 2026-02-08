@@ -3,6 +3,7 @@ namespace: qa
 externalSecrets:
   enabled: true
   awsRegion: us-west-2
+  secretName: hello-qa-secrets
   awsSecrets:
     secretName: eso-secret-hello
   serviceAccountName: hello
