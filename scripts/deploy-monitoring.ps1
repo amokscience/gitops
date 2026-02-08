@@ -29,13 +29,36 @@ if ($argocdRunning -ne "Running") {
 Write-Host "   ✓ ArgoCD is running" -ForegroundColor Green
 
 # ============================================================================
-# STEP 2: Apply monitoring AppProject
+# STEP 2: Install Prometheus Operator CRDs
 # ============================================================================
-Write-Host "`n2. Creating monitoring namespace..." -ForegroundColor Yellow
+Write-Host "`n2. Installing Prometheus Operator Custom Resource Definitions..." -ForegroundColor Yellow
+Write-Host "   (This is required for Prometheus and Alertmanager resources)" -ForegroundColor Gray
+
+$helmRepoAdded = helm repo add prometheus-community https://prometheus-community.github.io/helm-charts 2>&1
+helm repo update
+
+Write-Host "   ✓ Helm repositories updated" -ForegroundColor Green
+
+Write-Host "   Installing CRDs using server-side apply..." -ForegroundColor Gray
+helm template kube-prometheus-stack prometheus-community/kube-prometheus-stack --version 65.1.1 --namespace monitoring | kubectl apply --server-side -f - 2>&1 | Out-Null
+
+$crdCheck = kubectl get crd prometheuses.monitoring.coreos.com 2>$null
+if ($crdCheck) {
+    Write-Host "   ✓ Prometheus Operator CRDs installed successfully" -ForegroundColor Green
+} else {
+    Write-Host "❌ Failed to install CRDs!" -ForegroundColor Red
+    Write-Host "   Verify helm is installed and accessible" -ForegroundColor Yellow
+    exit 1
+}
+
+# ============================================================================
+# STEP 3: Apply monitoring AppProject
+# ============================================================================
+Write-Host "`n3. Creating monitoring namespace..." -ForegroundColor Yellow
 kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
 Write-Host "   ✓ Monitoring namespace created" -ForegroundColor Green
 
-Write-Host "`n3. Creating monitoring AppProject..." -ForegroundColor Yellow
+Write-Host "`n4. Creating monitoring AppProject..." -ForegroundColor Yellow
 
 if (Test-Path "argocd/projects/monitoring-project.yaml") {
     kubectl apply -f argocd/projects/monitoring-project.yaml
@@ -47,7 +70,9 @@ if (Test-Path "argocd/projects/monitoring-project.yaml") {
 }
 
 # ============================================================================
-# STEP 3: Verify monitoring apps exist in git
+# STEP 4: Verify monitoring apps exist in git
+# ============================================================================
+Write-Host "`n5. Verifying monitoring application manifests..." -ForegroundColor Yellow
 # ============================================================================
 Write-Host "`n4. Verifying monitoring application manifests..." -ForegroundColor Yellow
 
@@ -73,9 +98,9 @@ if (-not $allFilesExist) {
 }
 
 # ============================================================================
-# STEP 4: Wait for ArgoCD to sync monitoring apps
+# STEP 5: Wait for ArgoCD to sync monitoring apps
 # ============================================================================
-Write-Host "`n5. Waiting for ArgoCD to discover monitoring applications..." -ForegroundColor Yellow
+Write-Host "`n6. Waiting for ArgoCD to discover monitoring applications..." -ForegroundColor Yellow
 Write-Host "   (This may take 1-2 minutes for ArgoCD to sync from git)" -ForegroundColor Gray
 
 $maxWait = 120
@@ -101,9 +126,9 @@ if (-not $found) {
 }
 
 # ============================================================================
-# STEP 5: Add grafana.local to hosts file reminder
+# STEP 6: Add grafana.local to hosts file reminder
 # ============================================================================
-Write-Host "`n6. Hosts file configuration..." -ForegroundColor Yellow
+Write-Host "`n7. Hosts file configuration..." -ForegroundColor Yellow
 Write-Host "   Ensure this entry exists in your hosts file:" -ForegroundColor Gray
 Write-Host "   127.0.0.1 grafana.local" -ForegroundColor Cyan
 Write-Host ""
@@ -111,9 +136,9 @@ Write-Host "   Windows: C:\Windows\System32\drivers\etc\hosts (requires admin)" 
 Write-Host "   Linux/Mac: /etc/hosts" -ForegroundColor Gray
 
 # ============================================================================
-# STEP 6: Wait for monitoring namespace and pods
+# STEP 7: Wait for monitoring namespace and pods
 # ============================================================================
-Write-Host "`n7. Waiting for monitoring stack to deploy..." -ForegroundColor Yellow
+Write-Host "`n8. Waiting for monitoring stack to deploy..." -ForegroundColor Yellow
 Write-Host "   (This will take 3-5 minutes - downloading images and starting pods)" -ForegroundColor Gray
 
 # Wait for namespace
@@ -145,9 +170,9 @@ kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=alertmanager -n
 if ($?) { Write-Host "     ✓ Alertmanager ready" -ForegroundColor Green }
 
 # ============================================================================
-# STEP 7: Verify dashboards and alerts loaded
+# STEP 8: Verify dashboards and alerts loaded
 # ============================================================================
-Write-Host "`n8. Verifying configuration..." -ForegroundColor Yellow
+Write-Host "`n9. Verifying configuration..." -ForegroundColor Yellow
 
 $alertsConfigMap = kubectl get configmap argocd-alerts -n monitoring 2>$null
 if ($alertsConfigMap) {
