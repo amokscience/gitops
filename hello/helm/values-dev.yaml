@@ -6,7 +6,7 @@ image:
   tag: "dev-latest"
 
 env:
-  HTTP_PORT: 8080
+  HTTP_PORT: 8050
 
 resources:
   requests:
