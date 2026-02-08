@@ -33,6 +33,16 @@ spec:
             secretKeyRef:
               name: {{ include "hello.fullname" . }}-secrets
               key: config
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: accessKeyID
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: secretAccessKey
         resources:
           {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
