@@ -1,7 +1,7 @@
 namespace: dev
 
 externalSecrets:
-  enabled: false
+  enabled: true
   awsRegion: us-west-2
   awsSecrets:
     cfbdApiKey:
