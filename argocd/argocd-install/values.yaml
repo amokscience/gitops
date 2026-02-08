@@ -1,6 +1,17 @@
 # ArgoCD Helm chart values
 # Chart: https://github.com/argoproj/argo-helm
 
+# ============================================================================
+# Custom ArgoCD Image (Option 1)
+# ============================================================================
+# Uncomment and update to use a custom ArgoCD image with different Helm version
+# Example: you built a custom image with Helm 3.14.0
+# ============================================================================
+# global:
+#   image:
+#     repository: your-registry.com/your-org/argocd
+#     tag: v2.10.0-helm-3.14.0
+
 server:
   extraArgs:
     - --insecure  # For local development without TLS
