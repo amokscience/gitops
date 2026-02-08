@@ -118,8 +118,6 @@ spec:
     automated:
       prune: true
       orphanDeletion: false  # Prevent orphaned resource cleanup issues
-    syncOptions:
-    - CreateNamespace=true
       selfHeal: true
     syncOptions:
-      - CreateNamespace=true
+    - CreateNamespace=true
