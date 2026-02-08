@@ -4,6 +4,6 @@ externalSecrets:
   enabled: false
   awsRegion: us-west-2
   awsSecrets:
-    cfbdApiKey: cfb
-    redisAddr: redis-addr
+    cfbdApiKeyName: cfb
+    redisAddrName: redis-addr
   serviceAccountName: cfb

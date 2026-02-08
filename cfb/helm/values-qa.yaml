@@ -9,10 +9,6 @@ env:
   HTTP_PORT: 8070
   CFBD_API_BASE: https://api.collegefootballdata.com
 
-secrets:
-  cfbdApiKey: your_qa_api_key_here
-  redisAddr: redis-qa:6379
-
 resources:
   requests:
     cpu: 50m
