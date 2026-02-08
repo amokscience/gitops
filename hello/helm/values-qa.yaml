@@ -1,0 +1,25 @@
+# QA environment values
+replicaCount: 1
+image:
+  repository: amokscience/hello
+  pullPolicy: IfNotPresent
+  tag: "dev-latest"
+
+env:
+  HTTP_PORT: 8080
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 100Mi
+
+ingress:
+  enabled: true
+  host: hello-qa.local
+
+serviceAccount:
+  create: true
+  name: hello
