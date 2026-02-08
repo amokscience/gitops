@@ -1,0 +1,6 @@
+apiVersion: v2
+name: external-secrets-hello
+description: External Secrets Operator config for Hello app
+type: application
+version: 0.1.0
+appVersion: "1.0"

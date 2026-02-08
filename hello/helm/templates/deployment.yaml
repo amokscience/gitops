@@ -28,6 +28,11 @@ spec:
         env:
         - name: HTTP_PORT
           value: "{{ .Values.env.HTTP_PORT }}"
+        - name: CONFIG
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "hello.fullname" . }}-secrets
+              key: config
         resources:
           {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
