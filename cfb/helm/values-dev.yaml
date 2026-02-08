@@ -8,8 +8,10 @@ image:
 env:
   HTTP_PORT: 8070
   CFBD_API_BASE: https://api.collegefootballdata.com
-  CFBD_API_KEY: 2c18IFOOtCOAhtcWVwkR7f00CgfnhIt7EsLdB4law+9wpZD9BDA9HvPMkfT2S9nG
-  REDIS_ADDR: redis.local:6379
+
+secrets:
+  cfbdApiKey: 2c18IFOOtCOAhtcWVwkR7f00CgfnhIt7EsLdB4law+9wpZD9BDA9HvPMkfT2S9nG
+  redisAddr: redis.local:6379
 
 resources:
   requests:

@@ -31,9 +31,15 @@ spec:
         - name: CFBD_API_BASE
           value: "{{ .Values.env.CFBD_API_BASE }}"
         - name: CFBD_API_KEY
-          value: "{{ .Values.env.CFBD_API_KEY }}"
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "cfb.fullname" . }}-secrets
+              key: cfbd-api-key
         - name: REDIS_ADDR
-          value: "{{ .Values.env.REDIS_ADDR }}"
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "cfb.fullname" . }}-secrets
+              key: redis-addr
         resources:
           {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
