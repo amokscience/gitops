@@ -23,3 +23,6 @@ ingress:
 serviceAccount:
   create: true
   name: hello
+
+autoscaling:
+  enabled: false
