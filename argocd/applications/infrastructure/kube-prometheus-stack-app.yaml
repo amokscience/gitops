@@ -73,6 +73,25 @@ spec:
                 url: https://raw.githubusercontent.com/argoproj/argo-cd/master/examples/dashboard.json
                 datasource: Prometheus
         
+        # Node Exporter configuration - fix mount propagation for Docker Desktop/WSL2
+        nodeExporter:
+          hostNetwork: true
+          hostPID: true
+        
+        # Prometheus Node Exporter DaemonSet fixes
+        prometheus-node-exporter:
+          hostNetwork: true
+          hostPID: true
+          hostRootFsMount:
+            enabled: false  # Disable problematic root mount
+          tolerations:
+          - effect: NoSchedule
+            operator: Exists
+          - effect: NoExecute
+            operator: Exists
+          securityContext:
+            privileged: true
+        
         # Alertmanager configuration
         alertmanager:
           config:
@@ -98,6 +117,9 @@ spec:
   syncPolicy:
     automated:
       prune: true
+      orphanDeletion: false  # Prevent orphaned resource cleanup issues
+    syncOptions:
+    - CreateNamespace=true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
