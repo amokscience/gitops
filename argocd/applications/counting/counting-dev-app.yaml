@@ -8,9 +8,9 @@ metadata:
 spec:
   project: devtest
   source:
-    repoURL: https://github.com/amokscience/counting
+    repoURL: https://github.com/amokscience/gitops
     targetRevision: main
-    path: helm
+    path: counting/helm
     helm:
       values: |
         # Development environment values
