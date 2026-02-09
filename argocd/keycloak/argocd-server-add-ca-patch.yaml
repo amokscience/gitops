@@ -12,16 +12,17 @@ spec:
             secretName: argocd-keycloak-ca
       initContainers:
         - name: inject-keycloak-ca
-          image: busybox:1.36
+          image: debian:bookworm-slim
           command:
             - sh
             - -c
             - |
               set -euo pipefail
+              apt-get update >/dev/null
+              apt-get install -y --no-install-recommends ca-certificates >/dev/null
               mkdir -p /usr/local/share/ca-certificates
               cp /etc/keycloak-ca/ca.crt /usr/local/share/ca-certificates/keycloak.crt
-              # Some base images (busybox) lack update-ca-certificates
-              cat /usr/local/share/ca-certificates/keycloak.crt >> /etc/ssl/certs/ca-certificates.crt
+              update-ca-certificates >/dev/null
           volumeMounts:
             - name: keycloak-cert
               mountPath: /etc/keycloak-ca
