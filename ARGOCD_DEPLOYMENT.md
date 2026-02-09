@@ -143,9 +143,7 @@ ArgoCD syncs every 3 minutes by default. Check again after a few minutes.
 
 ## RBAC and Access Control
 
-See `SSO_RBAC_SETUP_GUIDE.md` for RBAC configuration information.
-
-See `KEYCLOAK_ARGOCD_SETUP.md` for complete Keycloak SSO integration guide.
+See `argocd/keycloak/KEYCLOAK_ARGOCD_SETUP.md` for complete Keycloak SSO integration guide.
 
 ## References
 
