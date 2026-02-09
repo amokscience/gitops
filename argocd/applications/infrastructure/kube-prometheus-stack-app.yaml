@@ -72,8 +72,6 @@ spec:
             operator: Exists
           - effect: NoExecute
             operator: Exists
-          securityContext:
-            privileged: true
         
         # Alertmanager configuration
         alertmanager:
