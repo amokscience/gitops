@@ -1,8 +1,13 @@
-# Development environment overrides
+# Development environment values
 replicaCount: 1
 
 image:
+  repository: amokscience/counting
+  pullPolicy: IfNotPresent
   tag: latest
+
+nameOverride: ""
+fullnameOverride: ""
 
 service:
   type: ClusterIP
@@ -11,6 +16,9 @@ service:
 
 ingress:
   enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
   hosts:
     - host: dev.counting.local
       paths:
@@ -27,9 +35,32 @@ resources:
 
 autoscaling:
   enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
 
 env:
   - name: LOG_LEVEL
     value: "debug"
   - name: ENVIRONMENT
     value: "dev"
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
