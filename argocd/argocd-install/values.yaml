@@ -19,6 +19,30 @@ server:
 configs:
   params:
     server.insecure: true
+  
+  # ========================================================================
+  # OIDC Configuration for Keycloak SSO
+  # ========================================================================
+  # The client-secret is stored in a Kubernetes secret (argocd-oidc-keycloak)
+  # created manually. Configuration below references that secret.
+  # ========================================================================
+  cm:
+    oidc.config: |
+      name: Keycloak
+      issuer: https://keycloak.local:8443/realms/master
+      clientID: argocd
+      clientSecret: $argocd-oidc-keycloak:client-secret
+      requestedScopes:
+        - openid
+        - profile
+        - email
+        - groups
+      requestedIDTokenClaims:
+        groups:
+          essential: true
+  
+  rbac:
+    scopes: '[groups, email]'
 
 # Enable high availability (optional for local)
 controller:
