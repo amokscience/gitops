@@ -20,7 +20,8 @@ spec:
               set -euo pipefail
               mkdir -p /usr/local/share/ca-certificates
               cp /etc/keycloak-ca/ca.crt /usr/local/share/ca-certificates/keycloak.crt
-              update-ca-certificates
+              # Some base images (busybox) lack update-ca-certificates
+              cat /usr/local/share/ca-certificates/keycloak.crt >> /etc/ssl/certs/ca-certificates.crt
           volumeMounts:
             - name: keycloak-cert
               mountPath: /etc/keycloak-ca
