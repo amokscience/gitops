@@ -24,6 +24,15 @@ spec:
                   resources:
                     requests:
                       storage: 10Gi
+          
+          # Prometheus Ingress
+          ingress:
+            enabled: true
+            ingressClassName: nginx
+            hosts:
+            - prometheus.local
+            annotations:
+              nginx.ingress.kubernetes.io/ssl-redirect: "false"
         
         # Grafana configuration
         grafana:
@@ -75,6 +84,14 @@ spec:
         
         # Alertmanager configuration
         alertmanager:
+          ingress:
+            enabled: true
+            ingressClassName: nginx
+            hosts:
+            - alertmanager.local
+            annotations:
+              nginx.ingress.kubernetes.io/ssl-redirect: "false"
+          
           config:
             global:
               resolve_timeout: 5m
