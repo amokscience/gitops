@@ -1,0 +1,23 @@
+# ArgoCD OIDC Configuration with Keycloak
+# This file configures ArgoCD to authenticate users via Keycloak
+# Install with: kubectl apply -f argocd/argocd-oidc-configmap.yaml
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-oidc-config
+  namespace: argocd
+data:
+  oidc.config: |
+    name: Keycloak
+    issuer: https://keycloak.local:8443/realms/master
+    clientID: argocd
+    clientSecret: $argocd-oidc-keycloak:client-secret
+    requestedScopes:
+      - openid
+      - profile
+      - email
+      - groups
+    requestedIDTokenClaims:
+      groups:
+        essential: true

@@ -28,10 +28,16 @@ data:
     
     # Role bindings (will be populated by SSO integration)
     # Format: g, <sso-user-or-group>, <role-name>
-    # Example (uncomment and modify when SSO is configured):
+    
+    # Keycloak group mappings (uncomment after Keycloak SSO is configured)
+    g, argocd-admins, role:admin
+    g, argocd-viewers, role:viewer
+    g, devtest-developers, role:devtest-viewer
+    
+    # Other SSO examples (LDAP, GitHub, etc.):
     # g, admin-group@yourdomain.com, role:admin
     # g, devtest-group@yourdomain.com, role:devtest-viewer
     # g, viewer-group@yourdomain.com, role:viewer
 
   # RBAC scopes - which claims in the JWT/SAML token to use for RBAC
-  # scopes: '[groups, email]'
+  scopes: '[groups, email]'
