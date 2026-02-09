@@ -10,7 +10,7 @@ metadata:
 data:
   oidc.config: |
     name: Keycloak
-    issuer: https://keycloak.local:8443/realms/master
+    issuer: https://host.docker.internal:8443/realms/master
     clientID: argocd
     clientSecret: $argocd-oidc-keycloak:client-secret
     insecureSkipVerify: true
