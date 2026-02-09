@@ -1,0 +1,68 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: counting-dev
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: devtest
+  source:
+    repoURL: https://github.com/amokscience/counting
+    targetRevision: main
+    path: helm
+    helm:
+      values: |
+        # Development environment values
+        environment: dev
+        
+        replicaCount: 1
+        
+        image:
+          repository: amokscience/counting
+          pullPolicy: IfNotPresent
+          tag: latest
+        
+        nameOverride: ""
+        fullnameOverride: ""
+        
+        service:
+          type: ClusterIP
+          port: 80
+        
+        ingress:
+          enabled: true
+          className: nginx
+          hosts:
+          - host: counting.local
+            paths:
+            - path: /
+              pathType: Prefix
+          annotations:
+            nginx.ingress.kubernetes.io/ssl-redirect: "false"
+        
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+  
+  # Ignore certain resource differences
+  ignoreDifferences:
+  - group: apps
+    kind: Deployment
+    jsonPointers:
+    - /spec/replicas

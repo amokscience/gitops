@@ -29,36 +29,70 @@ if ($argocdRunning -ne "Running") {
 Write-Host "   ✓ ArgoCD is running" -ForegroundColor Green
 
 # ============================================================================
-# STEP 2: Install Prometheus Operator CRDs
+# STEP 2: Install Prometheus Operator CRDs (from upstream, not Helm)
 # ============================================================================
 Write-Host "`n2. Installing Prometheus Operator Custom Resource Definitions..." -ForegroundColor Yellow
-Write-Host "   (This is required for Prometheus and Alertmanager resources)" -ForegroundColor Gray
+Write-Host "   (Using clean CRDs from prometheus-operator repo to avoid annotation bloat)" -ForegroundColor Gray
 
-$helmRepoAdded = helm repo add prometheus-community https://prometheus-community.github.io/helm-charts 2>&1
-helm repo update
+$crdUrls = @(
+    "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_prometheuses.yaml",
+    "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_alertmanagers.yaml",
+    "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_prometheusrules.yaml",
+    "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml",
+    "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_podmonitors.yaml",
+    "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_alertmanagerconfigs.yaml",
+    "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_scrapeconfigs.yaml",
+    "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_thanosrulers.yaml",
+    "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_prometheusagents.yaml"
+)
 
-Write-Host "   ✓ Helm repositories updated" -ForegroundColor Green
-
-Write-Host "   Installing CRDs using server-side apply..." -ForegroundColor Gray
-helm template kube-prometheus-stack prometheus-community/kube-prometheus-stack --version 65.1.1 --namespace monitoring | kubectl apply --server-side -f - 2>&1 | Out-Null
+foreach ($url in $crdUrls) {
+    $crdName = $url.Split('_')[1].Split('.')[0]
+    Write-Host "   Installing $crdName..." -ForegroundColor Gray
+    Invoke-WebRequest -Uri $url -OutFile $env:TEMP\crd.yaml -ErrorAction Stop
+    kubectl apply -f $env:TEMP\crd.yaml 2>&1 | Out-Null
+    Start-Sleep -Milliseconds 500
+}
 
 $crdCheck = kubectl get crd prometheuses.monitoring.coreos.com 2>$null
 if ($crdCheck) {
-    Write-Host "   ✓ Prometheus Operator CRDs installed successfully" -ForegroundColor Green
+    Write-Host "   ✓ All Prometheus Operator CRDs installed successfully" -ForegroundColor Green
 } else {
     Write-Host "❌ Failed to install CRDs!" -ForegroundColor Red
-    Write-Host "   Verify helm is installed and accessible" -ForegroundColor Yellow
+    Write-Host "   Check your internet connection and try again" -ForegroundColor Yellow
     exit 1
 }
 
 # ============================================================================
-# STEP 3: Apply monitoring AppProject
+# STEP 3: Verify and Create Storage Class
 # ============================================================================
-Write-Host "`n3. Creating monitoring namespace..." -ForegroundColor Yellow
+Write-Host "`n3. Verifying storage class..." -ForegroundColor Yellow
+
+$storageClass = kubectl get storageclass hostpath 2>$null
+if ($storageClass) {
+    Write-Host "   ✓ Storage class 'hostpath' exists" -ForegroundColor Green
+} else {
+    Write-Host "   ℹ Creating hostpath storage class..." -ForegroundColor Gray
+    kubectl apply -f - @"
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: hostpath
+provisioner: docker.io/hostpath
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+"@ 2>&1 | Out-Null
+    Write-Host "   ✓ Storage class created" -ForegroundColor Green
+}
+
+# ============================================================================
+# STEP 4: Apply monitoring AppProject
+# ============================================================================
+Write-Host "`n4. Creating monitoring namespace..." -ForegroundColor Yellow
 kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
 Write-Host "   ✓ Monitoring namespace created" -ForegroundColor Green
 
-Write-Host "`n4. Creating monitoring AppProject..." -ForegroundColor Yellow
+Write-Host "`n5. Creating monitoring AppProject..." -ForegroundColor Yellow
 
 if (Test-Path "argocd/projects/monitoring-project.yaml") {
     kubectl apply -f argocd/projects/monitoring-project.yaml
@@ -70,16 +104,13 @@ if (Test-Path "argocd/projects/monitoring-project.yaml") {
 }
 
 # ============================================================================
-# STEP 4: Verify monitoring apps exist in git
+# STEP 5: Verify monitoring apps exist in git
 # ============================================================================
-Write-Host "`n5. Verifying monitoring application manifests..." -ForegroundColor Yellow
-# ============================================================================
-Write-Host "`n4. Verifying monitoring application manifests..." -ForegroundColor Yellow
+Write-Host "`n6. Verifying monitoring application manifests..." -ForegroundColor Yellow
 
 $requiredFiles = @(
     "argocd/applications/infrastructure/kube-prometheus-stack-app.yaml",
-    "argocd/applications/infrastructure/argocd-alerts-app.yaml",
-    "monitoring/prometheus/argocd-alerts.yaml"
+    "argocd/applications/infrastructure/argocd-servicemonitors.yaml"
 )
 
 $allFilesExist = $true
@@ -98,71 +129,81 @@ if (-not $allFilesExist) {
 }
 
 # ============================================================================
-# STEP 5: Wait for ArgoCD to sync monitoring apps
+# STEP 6: Deploy kube-prometheus-stack Application
 # ============================================================================
-Write-Host "`n6. Waiting for ArgoCD to discover monitoring applications..." -ForegroundColor Yellow
-Write-Host "   (This may take 1-2 minutes for ArgoCD to sync from git)" -ForegroundColor Gray
+Write-Host "`n7. Deploying kube-prometheus-stack via ArgoCD..." -ForegroundColor Yellow
 
-$maxWait = 120
+kubectl apply -f argocd/applications/infrastructure/kube-prometheus-stack-app.yaml
+Write-Host "   ✓ Application created" -ForegroundColor Green
+
+Write-Host "`n8. Waiting for application to sync..." -ForegroundColor Yellow
+Write-Host "   (This may take 3-5 minutes - pulling images and starting pods)" -ForegroundColor Gray
+
+$maxWait = 300
 $elapsed = 0
-$found = $false
+$synced = $false
 
-while ($elapsed -lt $maxWait -and -not $found) {
-    $prometheusApp = kubectl get application kube-prometheus-stack -n argocd 2>$null
-    if ($prometheusApp) {
-        $found = $true
-        Write-Host "   ✓ Monitoring applications discovered" -ForegroundColor Green
-    } else {
-        Write-Host "   Waiting... ($elapsed/$maxWait seconds)" -ForegroundColor Gray
-        Start-Sleep -Seconds 10
-        $elapsed += 10
+while ($elapsed -lt $maxWait -and -not $synced) {
+    $appStatus = kubectl get application kube-prometheus-stack -n argocd -o jsonpath='{.status.operationState.phase}' 2>$null
+    $healthStatus = kubectl get application kube-prometheus-stack -n argocd -o jsonpath='{.status.health.status}' 2>$null
+    
+    if ($healthStatus -eq "Healthy" -and $appStatus -ne "Running") {
+        $synced = $true
+        Write-Host "   ✓ Application synced successfully" -ForegroundColor Green
+        break
     }
+    
+    Write-Host "   Status: $appStatus | Health: $healthStatus ($elapsed/$maxWait seconds)" -ForegroundColor Gray
+    Start-Sleep -Seconds 10
+    $elapsed += 10
 }
 
-if (-not $found) {
-    Write-Host "❌ Monitoring apps not discovered by ArgoCD" -ForegroundColor Red
-    Write-Host "   Check if root-app is syncing: kubectl get application root-app -n argocd" -ForegroundColor Yellow
-    exit 1
+if (-not $synced) {
+    Write-Host "⚠ Still syncing (taking longer than expected)" -ForegroundColor Yellow
+    Write-Host "   You can monitor progress: kubectl get application kube-prometheus-stack -n argocd -w" -ForegroundColor Gray
 }
 
 # ============================================================================
-# STEP 6: Add grafana.local to hosts file reminder
+# STEP 7: Create ServiceMonitors for ArgoCD Metrics
 # ============================================================================
-Write-Host "`n7. Hosts file configuration..." -ForegroundColor Yellow
-Write-Host "   Ensure this entry exists in your hosts file:" -ForegroundColor Gray
+Write-Host "`n9. Creating ArgoCD ServiceMonitors for Prometheus scraping..." -ForegroundColor Yellow
+
+if (Test-Path "argocd/applications/infrastructure/argocd-servicemonitors.yaml") {
+    kubectl apply -f argocd/applications/infrastructure/argocd-servicemonitors.yaml
+    Write-Host "   ✓ ServiceMonitors created" -ForegroundColor Green
+    Write-Host "   (Prometheus will start scraping ArgoCD metrics in ~2 minutes)" -ForegroundColor Gray
+} else {
+    Write-Host "⚠ argocd-servicemonitors.yaml not found - ArgoCD metrics may not be available" -ForegroundColor Yellow
+}
+
+# ============================================================================
+# STEP 8: Configure Hosts File
+# ============================================================================
+Write-Host "`n10. Configuring hosts file..." -ForegroundColor Yellow
+Write-Host "   Add these entries to your hosts file:" -ForegroundColor Gray
 Write-Host "   127.0.0.1 grafana.local" -ForegroundColor Cyan
+Write-Host "   127.0.0.1 prometheus.local" -ForegroundColor Cyan
+Write-Host "   127.0.0.1 alertmanager.local" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "   Windows: C:\Windows\System32\drivers\etc\hosts (requires admin)" -ForegroundColor Gray
 Write-Host "   Linux/Mac: /etc/hosts" -ForegroundColor Gray
 
 # ============================================================================
-# STEP 7: Wait for monitoring namespace and pods
+# STEP 9: Wait for all pods to be ready
 # ============================================================================
 Write-Host "`n8. Waiting for monitoring stack to deploy..." -ForegroundColor Yellow
-Write-Host "   (This will take 3-5 minutes - downloading images and starting pods)" -ForegroundColor Gray
-
-# Wait for namespace
-$elapsed = 0
-while ($elapsed -lt 120) {
-    $ns = kubectl get namespace monitoring 2>$null
-    if ($ns) { break }
-    Start-Sleep -Seconds 5
-    $elapsed += 5
-}
-
-if (-not $ns) {
-    Write-Host "   ⚠ Monitoring namespace not created yet, waiting longer..." -ForegroundColor Yellow
-}
-
-# Wait for Prometheus
-Write-Host "   - Prometheus..."
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=prometheus -n monitoring --timeout=300s 2>$null
-if ($?) { Write-Host "     ✓ Prometheus ready" -ForegroundColor Green }
+Write-Host "`n11. Waiting for pods to be ready..." -ForegroundColor Yellow
+Write-Host "   (This will take 3-5 minutes)" -ForegroundColor Gray
 
 # Wait for Grafana
 Write-Host "   - Grafana..."
 kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=grafana -n monitoring --timeout=300s 2>$null
 if ($?) { Write-Host "     ✓ Grafana ready" -ForegroundColor Green }
+
+# Wait for Prometheus
+Write-Host "   - Prometheus..."
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=prometheus -n monitoring --timeout=300s 2>$null
+if ($?) { Write-Host "     ✓ Prometheus ready" -ForegroundColor Green }
 
 # Wait for Alertmanager
 Write-Host "   - Alertmanager..."
@@ -170,17 +211,17 @@ kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=alertmanager -n
 if ($?) { Write-Host "     ✓ Alertmanager ready" -ForegroundColor Green }
 
 # ============================================================================
-# STEP 8: Verify dashboards and alerts loaded
+# STEP 10: Verify Ingresses
 # ============================================================================
-Write-Host "`n9. Verifying configuration..." -ForegroundColor Yellow
+Write-Host "`n12. Verifying ingress routes..." -ForegroundColor Yellow
 
-$alertsConfigMap = kubectl get configmap argocd-alerts -n monitoring 2>$null
-if ($alertsConfigMap) {
-    Write-Host "   ✓ ArgoCD alert rules configured" -ForegroundColor Green
+$ingresses = kubectl get ingress -n monitoring 2>$null
+if ($ingresses) {
+    Write-Host "   ✓ Ingresses created:" -ForegroundColor Green
+    kubectl get ingress -n monitoring | Select-Object NAME, CLASS, HOSTS | Format-Table
 } else {
-    Write-Host "   ⚠ ArgoCD alerts ConfigMap not found (may still be syncing)" -ForegroundColor Yellow
+    Write-Host "   ⚠ No ingresses found" -ForegroundColor Yellow
 }
-
 # ============================================================================
 # DEPLOYMENT COMPLETE
 # ============================================================================
@@ -188,27 +229,42 @@ Write-Host "`n" + "="*70 -ForegroundColor Cyan
 Write-Host "✓ Monitoring Stack Deployment Complete!" -ForegroundColor Green
 Write-Host "="*70 -ForegroundColor Cyan
 
-Write-Host "`nGrafana Credentials:" -ForegroundColor Yellow
+Write-Host "`nGrafana Login:" -ForegroundColor Yellow
+Write-Host "  URL:      http://grafana.local"
 Write-Host "  Username: admin"
 Write-Host "  Password: admin"
-Write-Host "  (⚠️  Change password after first login!)" -ForegroundColor Gray
+Write-Host "  ⚠️  Change the password after first login!" -ForegroundColor Red
 
-Write-Host "`nAccess URLs:" -ForegroundColor Yellow
-Write-Host "  Grafana:       http://grafana.local"
-Write-Host "  Prometheus:    kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090"
-Write-Host "  Alertmanager:  kubectl port-forward -n monitoring svc/kube-prometheus-stack-alertmanager 9093:9093"
+Write-Host "`nMonitoring URLs:" -ForegroundColor Yellow
+Write-Host "  Grafana:      http://grafana.local (dashboards and visualization)"
+Write-Host "  Prometheus:   http://prometheus.local (metrics database)"
+Write-Host "  Alertmanager: http://alertmanager.local (alerts and notifications)"
 
-Write-Host "`nAvailable Dashboards:" -ForegroundColor Yellow
-Write-Host "  - ArgoCD Dashboard (pre-loaded in 'ArgoCD' folder)"
-Write-Host "  - Kubernetes cluster metrics"
-Write-Host "  - Node exporter metrics"
-Write-Host "  - Application metrics"
+Write-Host "`nNext Steps:" -ForegroundColor Yellow
+Write-Host "  1. Login to http://grafana.local with admin/admin"
+Write-Host "  2. Add Prometheus datasource (Configuration → Data Sources)"
+Write-Host "     URL: http://kube-prometheus-stack-prometheus.monitoring:9090"
+Write-Host "  3. View ArgoCD Dashboard (Dashboards → ArgoCD folder)"
+Write-Host "  4. Configure alert notifications (Alertmanager)"
+Write-Host "  5. Create custom dashboards for your applications"
 
-Write-Host "`nConfigured Alerts:" -ForegroundColor Yellow
-Write-Host "  - ArgoCDAppOutOfSync: Apps out of sync > 5min"
-Write-Host "  - ArgoCDAppUnhealthy: Apps unhealthy > 10min"
-Write-Host "  - ArgoCDSyncFailure: Sync failures detected"
-Write-Host "  - ArgoCDControllerErrors: Controller errors"
+Write-Host "`nMetrics Available:" -ForegroundColor Yellow
+Write-Host "  - ArgoCD metrics (applications, syncs, repository status)"
+Write-Host "  - Kubernetes metrics (nodes, pods, containers)"
+Write-Host "  - Node metrics (CPU, memory, disk, network)"
+Write-Host "  - Custom metrics from your deployed apps"
+
+Write-Host "`nTroubleshooting:" -ForegroundColor Yellow
+Write-Host "  Monitor application status:"
+Write-Host "    kubectl get application kube-prometheus-stack -n argocd -w"
+Write-Host "  Check pod status:"
+Write-Host "    kubectl get pods -n monitoring"
+Write-Host "  View operator logs:"
+Write-Host "    kubectl logs -n monitoring -l app=kube-prometheus-stack-operator --tail=50"
+
+Write-Host "`nDocumentation:" -ForegroundColor Yellow
+Write-Host "  See MONITORING_SETUP.md for detailed configuration and troubleshooting"
+
 Write-Host "  - ArgoCDRepoConnectionFailure: Git repo connection issues"
 
 Write-Host "`nVerify Status:" -ForegroundColor Yellow

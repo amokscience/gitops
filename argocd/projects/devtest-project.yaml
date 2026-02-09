@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: devtest
+  namespace: argocd
+spec:
+  description: DevTest project for development and testing applications
+  
+  # Source repositories
+  sourceRepos:
+  - 'https://github.com/amokscience/*'
+  
+  # Cluster destinations
+  destinations:
+  - namespace: 'dev'
+    server: https://kubernetes.default.svc
+  - namespace: 'default'
+    server: https://kubernetes.default.svc
+  
+  # Cluster resources access
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  
+  # Namespace resources access
+  namespaceResourceBlacklist:
+  - group: ''
+    kind: Namespace
+  - group: ''
+    kind: ResourceQuota
+  - group: ''
+    kind: LimitRange
