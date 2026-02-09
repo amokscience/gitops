@@ -1,0 +1,23 @@
+# ArgoCD OIDC Configuration Patch
+# This file adds OIDC configuration to the existing argocd-cm ConfigMap
+# Deploy with: kubectl apply -f argocd/argocd-cm-oidc-patch.yaml
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+data:
+  oidc.config: |
+    name: Keycloak
+    issuer: https://keycloak.local:8443/realms/master
+    clientID: argocd
+    clientSecret: $argocd-oidc-keycloak:client-secret
+    requestedScopes:
+      - openid
+      - profile
+      - email
+      - groups
+    requestedIDTokenClaims:
+      groups:
+        essential: true
