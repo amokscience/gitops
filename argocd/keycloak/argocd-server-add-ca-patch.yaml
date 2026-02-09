@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-server
+  namespace: argocd
+spec:
+  template:
+    spec:
+      volumes:
+        - name: keycloak-cert
+          secret:
+            secretName: argocd-keycloak-ca
+      initContainers:
+        - name: inject-keycloak-ca
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              set -euo pipefail
+              mkdir -p /usr/local/share/ca-certificates
+              cp /etc/keycloak-ca/ca.crt /usr/local/share/ca-certificates/keycloak.crt
+              update-ca-certificates
+          volumeMounts:
+            - name: keycloak-cert
+              mountPath: /etc/keycloak-ca
+      containers:
+        - name: argocd-server
+          volumeMounts:
+            - name: keycloak-cert
+              mountPath: /etc/keycloak-ca
