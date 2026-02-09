@@ -8,7 +8,7 @@ metadata:
   name: argocd-cm
   namespace: argocd
 data:
-  dex.config: |
+  oidc.config: |
     name: Keycloak
     issuer: https://keycloak.local:8443/realms/master
     clientID: argocd
