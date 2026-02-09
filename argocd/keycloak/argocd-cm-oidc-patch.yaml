@@ -13,5 +13,7 @@ data:
     issuer: https://keycloak.local:8443/realms/master
     clientID: argocd
     clientSecret: 8GZB5E2TGQeJdOOcSFRQz9KdY2BVGxwn  # Ensure this matches Keycloak client secret
-    tlsInsecureSkipVerify: true
     requestedScopes: ["openid", "profile", "email", "groups"]
+    config:
+      tlsInsecureSkipVerify: true
+
