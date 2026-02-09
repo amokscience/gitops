@@ -38,6 +38,7 @@ spec:
             storageSpec:
               volumeClaimTemplate:
                 spec:
+                  storageClassName: docker-desktop
                   accessModes: ["ReadWriteOnce"]
                   resources:
                     requests:
