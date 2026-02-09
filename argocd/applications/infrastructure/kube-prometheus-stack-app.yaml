@@ -19,7 +19,7 @@ spec:
             storageSpec:
               volumeClaimTemplate:
                 spec:
-                  storageClassName: docker-desktop
+                  storageClassName: hostpath
                   accessModes: ["ReadWriteOnce"]
                   resources:
                     requests:
