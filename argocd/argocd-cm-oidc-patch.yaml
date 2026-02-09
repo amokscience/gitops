@@ -13,6 +13,7 @@ data:
     issuer: https://keycloak.local:8443/realms/master
     clientID: argocd
     clientSecret: $argocd-oidc-keycloak:client-secret
+    insecureSkipVerify: true
     requestedScopes:
       - openid
       - profile
