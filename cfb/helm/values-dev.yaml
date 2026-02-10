@@ -16,7 +16,9 @@ resources:
   limits:
     cpu: 100m
     memory: 100Mi
-
+serviceAccount:
+  create: true
+  name: cfb
 ingress:
   enabled: true
   host: dev.cfb.local
