@@ -19,6 +19,11 @@ resources:
 serviceAccount:
   create: true
   name: cfb
+
+service:
+  type: ClusterIP
+  port: 80
+
 ingress:
   enabled: true
   host: dev.cfb.local

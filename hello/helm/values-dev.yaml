@@ -24,5 +24,9 @@ serviceAccount:
   create: true
   name: hello
 
+service:
+  type: ClusterIP
+  port: 80
+
 autoscaling:
   enabled: false
