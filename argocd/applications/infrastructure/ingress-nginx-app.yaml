@@ -13,12 +13,7 @@ spec:
       values: |
         controller:
           service:
-            type: NodePort
-          hostPort:
-            enabled: true
-            ports:
-              http: 80
-              https: 443
+            type: LoadBalancer
   destination:
     server: https://kubernetes.default.svc
     namespace: ingress-nginx
