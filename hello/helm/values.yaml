@@ -1,0 +1,39 @@
+replicaCount: 1
+
+image:
+  repository: amokscience/hello
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+env: {}
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+affinity: {}
+
+tolerations: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  host: ""
+
